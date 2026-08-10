@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const isDevelopment = import.meta.env.MODE === 'development';
+const defaultApiUrl = isDevelopment 
+  ? 'http://localhost:5000/api' 
+  : 'https://digital-library-02oz.onrender.com/api';
+
+const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 
 const api = axios.create({
   baseURL: API_URL,
