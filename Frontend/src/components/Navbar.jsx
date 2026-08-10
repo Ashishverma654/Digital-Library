@@ -68,11 +68,17 @@ const Navbar = () => {
           {user ? (
             <>
               <NotificationsPanel />
-              <div className="relative group cursor-pointer flex items-center gap-2 border-l border-black/10 dark:border-white/20 pl-4">
-                <span className="text-gray-800 dark:text-on-surface-variant text-sm hidden md:block">{user.name}</span>
-                <div className="w-9 h-9 rounded-full bg-white/50 dark:bg-surface-container-high flex justify-center items-center border border-white/40 dark:border-white/20 hover:border-primary transition-colors">
-                  <span className="material-symbols-outlined text-sm text-primary">person</span>
-                </div>
+              <div className="flex items-center gap-2 border-l border-black/10 dark:border-white/20 pl-4">
+                <Link to="/profile" className="flex items-center gap-2 group cursor-pointer hover:opacity-80 transition-opacity">
+                  <span className="text-gray-800 dark:text-on-surface-variant text-sm hidden md:block group-hover:text-primary transition-colors">{user.name}</span>
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/50 dark:bg-surface-container-high flex justify-center items-center border border-white/40 dark:border-white/20 group-hover:border-primary transition-colors">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm text-primary">person</span>
+                    )}
+                  </div>
+                </Link>
                 <button onClick={handleLogout} className="text-gray-800 dark:text-on-surface-variant hover:text-error transition-colors ml-2 p-1" title="Logout">
                   <LogOut size={18} />
                 </button>

@@ -53,6 +53,14 @@ const bookSchema = new mongoose.Schema({
   digitalFileUrl: {
     type: String,
     required: function() { return this.type === 'digital' || this.type === 'hybrid'; }
+  },
+  averageRating: {
+    type: Number,
+    default: 0,
+  },
+  numReviews: {
+    type: Number,
+    default: 0,
   }
 }, {
   timestamps: true,

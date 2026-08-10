@@ -29,6 +29,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['USER', 'LIBRARIAN'],
     default: 'USER',
+  },
+  refreshToken: {
+    type: String,
+  },
+  avatar: {
+    type: String,
+    default: 'https://ui-avatars.com/api/?name=User&background=random',
   }
 }, {
   timestamps: true,

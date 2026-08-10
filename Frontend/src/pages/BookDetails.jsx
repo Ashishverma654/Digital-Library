@@ -13,12 +13,25 @@ const BookDetails = () => {
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Review states
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
-    const fetchBook = async () => {
+    const fetchBookAndReviews = async () => {
       try {
-        const response = await api.get(`/books/${id}`);
-        if (response.data.success) {
-          setBook(response.data.data);
+        const [bookRes, reviewsRes] = await Promise.all([
+          api.get(`/books/${id}`),
+          api.get(`/books/${id}/reviews`)
+        ]);
+        
+        if (bookRes.data.success) {
+          setBook(bookRes.data.data);
+        }
+        if (reviewsRes.data.success) {
+          setReviews(reviewsRes.data.data);
         }
       } catch (err) {
         toast.error('Failed to fetch book details');
@@ -28,8 +41,32 @@ const BookDetails = () => {
       }
     };
 
-    fetchBook();
+    fetchBookAndReviews();
   }, [id, navigate]);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!rating || !comment) return;
+
+    setSubmitting(true);
+    try {
+      const response = await api.post(`/books/${id}/reviews`, { rating, comment });
+      if (response.data.success) {
+        toast.success('Review submitted successfully!');
+        setComment('');
+        setRating(5);
+        // Refetch reviews
+        const reviewsRes = await api.get(`/books/${id}/reviews`);
+        if (reviewsRes.data.success) {
+          setReviews(reviewsRes.data.data);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -153,34 +190,124 @@ const BookDetails = () => {
                 </div>
               )}
               
-              {isAvailable ? (
-                !user ? (
-                  <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 text-center">
-                    Login to Borrow
-                  </Link>
-                ) : user.role === 'USER' ? (
-                  <button 
-                    onClick={handleRequestBorrow} 
-                    className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1"
-                  >
-                    Request to Borrow
-                  </button>
-                ) : (
-                  <p className="text-gray-500 dark:text-on-surface-variant flex items-center gap-2">
-                    <Clock size={18} /> Librarians cannot borrow books.
-                  </p>
-                )
+              {/* Render action buttons based on book type and availability */}
+              
+              {!user ? (
+                <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 text-center">
+                  Login to Access
+                </Link>
+              ) : user.role === 'LIBRARIAN' ? (
+                <p className="text-gray-500 dark:text-on-surface-variant flex items-center gap-2">
+                  <Clock size={18} /> Librarians cannot borrow or read books.
+                </p>
               ) : (
-                <button 
-                  className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed"
-                  disabled
-                >
-                  Join Waitlist
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                  
+                  {/* Read Now Button (For Digital and Hybrid) */}
+                  {(book.type === 'digital' || book.type === 'hybrid') && (
+                    <Link 
+                      to={`/books/${id}/read`}
+                      className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-secondary to-tertiary text-white font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(255,217,224,0.3)] hover:shadow-[0_0_30px_rgba(255,217,224,0.5)] transition-shadow duration-300 transform hover:-translate-y-1 text-center flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                      Read Now
+                    </Link>
+                  )}
+
+                  {/* Borrow Button (For Physical and Hybrid) */}
+                  {(book.type === 'physical' || book.type === 'hybrid') && (
+                    isAvailable ? (
+                      <button 
+                        onClick={handleRequestBorrow} 
+                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">library_books</span>
+                        Request Physical Copy
+                      </button>
+                    ) : (
+                      <button 
+                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed"
+                        disabled
+                      >
+                        Join Waitlist
+                      </button>
+                    )
+                  )}
+                </div>
               )}
             </div>
             
           </div>
+        </div>
+      </div>
+      {/* Reviews Section */}
+      <div className="mt-12 glass-panel rounded-xl p-glass-padding md:p-12">
+        <h2 className="font-headline-md text-headline-md text-gray-900 dark:text-primary-fixed mb-6">Reviews & Ratings</h2>
+        
+        {/* Review Form (Only if logged in and not a librarian, though ideally backend checks if borrowed) */}
+        {user && user.role === 'USER' && (
+          <form onSubmit={handleSubmitReview} className="mb-10 bg-white/30 dark:bg-black/20 p-6 rounded-lg border border-black/5 dark:border-white/5">
+            <h3 className="font-headline-sm text-headline-sm text-gray-900 dark:text-on-surface mb-4">Leave a Review</h3>
+            <div className="flex items-center gap-4 mb-4">
+              <label className="font-label-sm text-gray-700 dark:text-on-surface-variant">Rating:</label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className={`material-symbols-outlined text-2xl ${star <= rating ? 'text-yellow-500' : 'text-gray-400 dark:text-gray-600'}`}
+                    style={{ fontVariationSettings: star <= rating ? "'FILL' 1" : "'FILL' 0" }}
+                  >
+                    star
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea
+              className="glass-input w-full p-4 rounded-lg font-body-md text-gray-900 dark:text-on-background mb-4"
+              rows="3"
+              placeholder="Share your thoughts about this book..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              required
+            ></textarea>
+            <button 
+              type="submit" 
+              disabled={submitting}
+              className="px-6 py-2 bg-primary/20 hover:bg-primary/30 text-primary dark:text-primary-fixed border border-primary/30 rounded-lg font-label-sm transition-colors"
+            >
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </form>
+        )}
+
+        {/* Review List */}
+        <div className="space-y-6">
+          {reviews.length === 0 ? (
+            <p className="text-gray-500 dark:text-on-surface-variant italic">No reviews yet. Be the first to review!</p>
+          ) : (
+            reviews.map((review) => (
+              <div key={review._id} className="border-b border-black/5 dark:border-white/5 pb-6 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-label-sm font-semibold text-gray-900 dark:text-on-surface">{review.user?.name || 'Anonymous'}</span>
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span 
+                        key={star} 
+                        className={`material-symbols-outlined text-sm ${star <= review.rating ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-700'}`}
+                        style={{ fontVariationSettings: star <= review.rating ? "'FILL' 1" : "'FILL' 0" }}
+                      >
+                        star
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <p className="font-body-md text-gray-700 dark:text-on-surface-variant">{review.comment}</p>
+                <p className="font-label-sm text-xs text-gray-400 mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </main>

@@ -37,9 +37,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (err) {
+      console.error('Logout failed on server', err);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('user');
+    }
   };
 
   const value = {

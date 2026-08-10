@@ -31,7 +31,7 @@ const LibrarianDashboard = () => {
         if (transRes.data.success) {
           // Filter to only pending requests, take top 5
           const pending = transRes.data.data
-            .filter(t => t.status === 'PENDING')
+            .filter(t => t.status === 'REQUESTED')
             .slice(0, 5);
           setRecentRequests(pending);
         }
@@ -78,13 +78,22 @@ const LibrarianDashboard = () => {
             Overview of digital library performance, active loans, and pending requests. Manage your collection and user activity from one centralized hub.
           </p>
         </div>
-        <Link 
-          to="/librarian/transactions"
-          className="py-3 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary-container text-white dark:text-background font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(236,178,255,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-        >
-          <span className="material-symbols-outlined text-[20px]">manage_search</span>
-          Manage Transactions
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link 
+            to="/librarian/books"
+            className="py-3 px-6 rounded-lg bg-gradient-to-r from-secondary to-tertiary text-white font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(255,217,224,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[20px]">library_add</span>
+            Manage Books
+          </Link>
+          <Link 
+            to="/librarian/transactions"
+            className="py-3 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary-container text-white dark:text-background font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(236,178,255,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[20px]">manage_search</span>
+            Manage Transactions
+          </Link>
+        </div>
       </header>
 
       {/* Stats Bento Grid */}

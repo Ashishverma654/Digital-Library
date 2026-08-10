@@ -11,6 +11,7 @@ const Books = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [sort, setSort] = useState('newest');
   const [availableOnly, setAvailableOnly] = useState(false);
 
   const fetchBooks = useCallback(async () => {
@@ -19,6 +20,7 @@ const Books = () => {
       const queryParams = new URLSearchParams();
       if (search) queryParams.append('search', search);
       if (category) queryParams.append('category', category);
+      if (sort) queryParams.append('sort', sort);
       if (availableOnly) queryParams.append('availability', 'available');
 
       const response = await api.get(`/books?${queryParams.toString()}`);
@@ -30,7 +32,7 @@ const Books = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, category, availableOnly]);
+  }, [search, category, sort, availableOnly]);
 
   useEffect(() => {
     // Debounce search
@@ -52,7 +54,7 @@ const Books = () => {
       
       {/* Search & Filter Bar (Floating Glass) */}
       <section className="glass-panel rounded-xl p-glass-padding flex flex-col md:flex-row gap-6 items-center justify-between z-20 w-full sticky top-24 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
-        <div className="relative w-full md:w-1/2 flex items-center glow-effect rounded-lg">
+        <div className="relative w-full md:w-1/3 flex items-center glow-effect rounded-lg">
           <span className="material-symbols-outlined absolute left-4 text-gray-500 dark:text-on-surface-variant z-10" data-icon="search">search</span>
           <input 
             className="glass-input w-full pl-12 pr-4 py-3 rounded-lg font-body-md text-body-md text-gray-900 dark:text-on-background placeholder-gray-500 placeholder-dark:on-surface-variant/50" 
@@ -63,11 +65,25 @@ const Books = () => {
           />
         </div>
         
-        <div className="flex flex-wrap items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-          {/* Category Dropdown */}
-          <div className="relative group">
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end flex-grow">
+          
+          {/* Sort Dropdown */}
+          <div className="relative group flex-grow md:flex-grow-0">
             <select 
-              className="glass-input px-4 py-2 rounded-lg font-body-md text-body-md text-gray-900 dark:text-on-background appearance-none pr-10 cursor-pointer bg-white/50 dark:bg-black/20"
+              className="glass-input w-full md:w-auto px-4 py-2 rounded-lg font-body-md text-body-md text-gray-900 dark:text-on-background appearance-none pr-10 cursor-pointer bg-white/50 dark:bg-black/20"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="newest" className="text-black">Newest Additions</option>
+              <option value="popular" className="text-black">Most Popular</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-white/70 pointer-events-none" data-icon="sort">sort</span>
+          </div>
+
+          {/* Category Dropdown */}
+          <div className="relative group flex-grow md:flex-grow-0">
+            <select 
+              className="glass-input w-full md:w-auto px-4 py-2 rounded-lg font-body-md text-body-md text-gray-900 dark:text-on-background appearance-none pr-10 cursor-pointer bg-white/50 dark:bg-black/20"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -76,13 +92,16 @@ const Books = () => {
               <option value="Computer Science" className="text-black">Computer Science</option>
               <option value="Fiction" className="text-black">Fiction</option>
               <option value="Science" className="text-black">Science</option>
+              <option value="Design" className="text-black">Design</option>
+              <option value="Technology" className="text-black">Technology</option>
+              <option value="Science Fiction" className="text-black">Science Fiction</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-white/70 pointer-events-none" data-icon="expand_more">expand_more</span>
           </div>
           
           {/* Toggle */}
           <div className="flex items-center gap-3">
-            <span className="font-body-md text-body-md text-gray-700 dark:text-on-surface-variant">Available Only</span>
+            <span className="font-body-md text-body-md text-gray-700 dark:text-on-surface-variant">Available</span>
             <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
               <input 
                 checked={availableOnly}
