@@ -1,5 +1,5 @@
 const verifyEnv = () => {
-  const requiredEnv = ['MONGO_URI', 'JWT_SECRET'];
+  const requiredEnv = ['MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
   
   const missing = requiredEnv.filter(envVar => !process.env[envVar]);
   

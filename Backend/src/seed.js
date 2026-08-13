@@ -13,7 +13,11 @@ const Review = require('./models/Review');
 const Notification = require('./models/Notification');
 
 // Connect to DB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/digital_library');
+if (!process.env.MONGO_URI) {
+  console.error("FATAL ERROR: MONGO_URI is not defined in your .env file!");
+  process.exit(1);
+}
+mongoose.connect(process.env.MONGO_URI);
 
 const generateAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
 
