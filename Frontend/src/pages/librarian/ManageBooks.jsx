@@ -2,26 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
+import { Plus, X, Search, BookOpen, Trash2 } from 'lucide-react';
 
 const ManageBooks = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Form State
   const [formData, setFormData] = useState({
-    title: '',
-    author: '',
-    isbn: '',
-    publisher: '',
-    category: '',
-    description: '',
-    type: 'digital',
-    totalCopies: 0,
-    coverImage: '',
-    digitalFileUrl: ''
+    title: '', author: '', isbn: '', publisher: '', category: '', type: 'physical', edition: '', publicationYear: '', language: 'English'
   });
+
+  // Copies State
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [copies, setCopies] = useState([]);
+  const [showAddCopy, setShowAddCopy] = useState(false);
+  const [copyData, setCopyData] = useState({ accessionNumber: '', barcode: '', condition: 'NEW', shelfLocation: '' });
 
   const fetchBooks = async () => {
     try {
@@ -41,196 +39,176 @@ const ManageBooks = () => {
     fetchBooks();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
   const handleAddBook = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = { ...formData };
-      if (payload.type === 'digital') {
-        payload.totalCopies = 0;
-      } else {
-        payload.totalCopies = Number(payload.totalCopies);
-      }
-
-      const response = await api.post('/books', payload);
+      const response = await api.post('/books', formData);
       if (response.data.success) {
-        toast.success('Book added successfully');
+        toast.success('Book created successfully');
         setShowAddForm(false);
-        setFormData({
-          title: '', author: '', isbn: '', publisher: '', category: '', description: '', type: 'digital', totalCopies: 0, coverImage: '', digitalFileUrl: ''
-        });
+        setFormData({ title: '', author: '', isbn: '', publisher: '', category: '', type: 'physical', edition: '', publicationYear: '', language: 'English' });
         fetchBooks();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add book');
+      toast.error(err.response?.data?.message || 'Failed to create book');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteBook = async (id) => {
-    if (window.confirm('Are you sure you want to delete this book?')) {
-      try {
-        const response = await api.delete(`/books/${id}`);
-        if (response.data.success) {
-          toast.success('Book deleted successfully');
-          setBooks(books.filter(b => b._id !== id));
-        }
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to delete book');
-      }
+  const handleSelectBook = async (book) => {
+    setSelectedBook(book);
+    try {
+      const res = await api.get(`/books/${book._id}/copies`);
+      setCopies(res.data.data);
+    } catch (err) {
+      toast.error('Failed to load book copies');
     }
   };
 
-  if (loading && books.length === 0) {
-    return (
-      <div className="flex justify-center items-center py-32 z-10 relative">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const handleAddCopy = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post(`/books/${selectedBook._id}/copies`, copyData);
+      toast.success('Copy added successfully');
+      setCopies([...copies, res.data.data]);
+      setShowAddCopy(false);
+      setCopyData({ accessionNumber: '', barcode: '', condition: 'NEW', shelfLocation: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add copy');
+    }
+  };
+
+  const filteredBooks = books.filter(b => b.title.toLowerCase().includes(search.toLowerCase()) || b.isbn.includes(search));
 
   return (
-    <main className="w-full max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop pt-32 pb-24 relative z-10 fade-in-up">
-      <Link className="inline-flex items-center space-x-2 text-secondary dark:text-secondary-fixed-dim hover:text-secondary-container transition-colors duration-200 mb-8 font-label-sm text-label-sm group" to="/librarian/dashboard">
-        <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform duration-200">arrow_back</span>
-        <span>Back to Dashboard</span>
-      </Link>
-      
-      <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-6">
-        <div>
-          <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary dark:text-primary-fixed tracking-tight">
-            Manage Catalog
-          </h1>
-          <p className="font-body-md text-body-md text-gray-600 dark:text-on-surface-variant mt-2 max-w-2xl">
-            Add new books, update existing inventory, and manage the digital collection.
-          </p>
+    <div className="min-h-screen pt-24 pb-12 px-container-padding-mobile md:px-container-padding-desktop z-10 relative">
+      <div className="max-w-7xl mx-auto">
+        <Link className="inline-flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors mb-6 font-semibold" to="/librarian/dashboard">
+          <span className="material-symbols-outlined">arrow_back</span>
+          <span>Back to Dashboard</span>
+        </Link>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="font-headline-lg text-headline-lg font-bold text-gray-900 dark:text-on-background">Inventory Management</h1>
+            <p className="text-gray-600 dark:text-on-surface-variant mt-2">Manage library titles and their physical copies.</p>
+          </div>
+          <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+            {showAddForm ? 'Cancel' : <><Plus size={20} /> Add New Title</>}
+          </button>
         </div>
-        <button 
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="py-3 px-6 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(236,178,255,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
-        >
-          <span className="material-symbols-outlined text-[20px]">{showAddForm ? 'close' : 'add'}</span>
-          {showAddForm ? 'Cancel' : 'Add New Book'}
-        </button>
-      </header>
 
-      {showAddForm && (
-        <div className="glass-panel rounded-xl p-8 mb-10 border border-primary/20">
-          <h2 className="font-headline-md text-gray-900 dark:text-white mb-6">Add New Book</h2>
-          <form onSubmit={handleAddBook} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
-              <input type="text" name="title" required value={formData.title} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Author *</label>
-              <input type="text" name="author" required value={formData.author} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ISBN *</label>
-              <input type="text" name="isbn" required value={formData.isbn} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
-              <select name="category" required value={formData.category} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white bg-white/50 dark:bg-black/20">
-                <option value="" disabled>Select Category</option>
-                <option value="Fiction">Fiction</option>
-                <option value="Non-Fiction">Non-Fiction</option>
-                <option value="Science">Science</option>
-                <option value="Science Fiction">Science Fiction</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Self Help">Self Help</option>
-                <option value="Design">Design</option>
-                <option value="Technology">Technology</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
-              <select name="type" required value={formData.type} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white bg-white/50 dark:bg-black/20">
-                <option value="digital">Digital</option>
-                <option value="physical">Physical</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-            </div>
-            {formData.type !== 'digital' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Copies *</label>
-                <input type="number" name="totalCopies" min="1" required value={formData.totalCopies} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
+        {showAddForm && (
+          <div className="glass-panel p-8 rounded-2xl mb-8 fade-in-up border border-primary/20">
+            <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-on-background">Create New Book Title</h2>
+            <form onSubmit={handleAddBook} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <input type="text" placeholder="Title *" required className="glass-input px-4 py-3 rounded-lg w-full" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+              <input type="text" placeholder="Author *" required className="glass-input px-4 py-3 rounded-lg w-full" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} />
+              <input type="text" placeholder="ISBN *" required className="glass-input px-4 py-3 rounded-lg w-full" value={formData.isbn} onChange={e => setFormData({...formData, isbn: e.target.value})} />
+              <input type="text" placeholder="Category *" required className="glass-input px-4 py-3 rounded-lg w-full" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+              <input type="text" placeholder="Publisher" className="glass-input px-4 py-3 rounded-lg w-full" value={formData.publisher} onChange={e => setFormData({...formData, publisher: e.target.value})} />
+              <input type="text" placeholder="Edition (e.g. 3rd)" className="glass-input px-4 py-3 rounded-lg w-full" value={formData.edition} onChange={e => setFormData({...formData, edition: e.target.value})} />
+              <input type="number" placeholder="Publication Year" className="glass-input px-4 py-3 rounded-lg w-full" value={formData.publicationYear} onChange={e => setFormData({...formData, publicationYear: e.target.value})} />
+              <input type="text" placeholder="Language" className="glass-input px-4 py-3 rounded-lg w-full" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} />
+              
+              <div className="md:col-span-3">
+                <button type="submit" disabled={submitting} className="w-full bg-primary text-on-primary py-3 rounded-lg font-semibold hover:opacity-90">Save Title</button>
               </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Publisher</label>
-              <input type="text" name="publisher" value={formData.publisher} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Image URL</label>
-              <input type="url" name="coverImage" placeholder="https://..." value={formData.coverImage} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              <textarea name="description" rows="3" value={formData.description} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white"></textarea>
-            </div>
-            {(formData.type === 'digital' || formData.type === 'hybrid') && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Digital File URL *</label>
-                <input type="url" name="digitalFileUrl" required placeholder="https://..." value={formData.digitalFileUrl} onChange={handleInputChange} className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" />
-              </div>
-            )}
-            <div className="md:col-span-2 flex justify-end mt-4">
-              <button type="submit" disabled={submitting} className="py-3 px-8 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-colors">
-                {submitting ? 'Adding...' : 'Save Book'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+            </form>
+          </div>
+        )}
 
-      {/* Books Table */}
-      <div className="glass-panel rounded-xl overflow-hidden border border-black/10 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="border-b border-black/10 dark:border-white/10 text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider bg-gray-100 dark:bg-black/10">
-                <th className="p-4 pl-6 font-semibold">Title</th>
-                <th className="p-4 font-semibold">Author</th>
-                <th className="p-4 font-semibold">Category</th>
-                <th className="p-4 font-semibold">Type</th>
-                <th className="p-4 font-semibold">Stock</th>
-                <th className="p-4 pr-6 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="font-body-md text-body-md text-gray-900 dark:text-on-surface divide-y divide-black/5 dark:divide-white/5">
-              {books.map(book => (
-                <tr key={book._id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-200">
-                  <td className="p-4 pl-6 text-gray-900 dark:text-white font-medium">{book.title}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300">{book.author}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300">{book.category}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300 capitalize">{book.type}</td>
-                  <td className="p-4 text-gray-600 dark:text-gray-300">
-                    {book.type === 'digital' ? '∞' : `${book.availableCopies}/${book.totalCopies}`}
-                  </td>
-                  <td className="p-4 pr-6 text-right">
-                    <button 
-                      onClick={() => handleDeleteBook(book._id)}
-                      className="w-8 h-8 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all ml-auto" 
-                      title="Delete Book"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </td>
-                </tr>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Books List */}
+          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl">
+            <div className="flex items-center gap-3 mb-6 bg-white/50 dark:bg-black/20 p-3 rounded-lg border border-black/10 dark:border-white/10">
+              <Search className="text-gray-400" />
+              <input type="text" placeholder="Search by title or ISBN..." className="bg-transparent border-none outline-none w-full text-gray-900 dark:text-white" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            
+            <div className="space-y-4">
+              {filteredBooks.map(book => (
+                <div key={book._id} onClick={() => handleSelectBook(book)} className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedBook?._id === book._id ? 'border-primary bg-primary/5' : 'border-black/10 dark:border-white/10 hover:border-primary/50 bg-white dark:bg-surface-container'}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-white">{book.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{book.author} • ISBN: {book.isbn}</p>
+                    </div>
+                    <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded font-semibold text-gray-600 dark:text-gray-300">{book.category}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+              {filteredBooks.length === 0 && <p className="text-center text-gray-500 py-8">No books found.</p>}
+            </div>
+          </div>
+
+          {/* Copies Management Sidebar */}
+          <div className="lg:col-span-1">
+            {selectedBook ? (
+              <div className="glass-panel p-6 rounded-2xl sticky top-24">
+                <div className="mb-6 pb-6 border-b border-black/10 dark:border-white/10">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedBook.title}</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage Physical Copies</p>
+                </div>
+
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Copies ({copies.length})</h3>
+                  <button onClick={() => setShowAddCopy(!showAddCopy)} className="text-primary hover:text-primary/80 font-semibold text-sm flex items-center gap-1">
+                    <Plus size={16} /> Add Copy
+                  </button>
+                </div>
+
+                {showAddCopy && (
+                  <form onSubmit={handleAddCopy} className="mb-6 p-4 bg-black/5 dark:bg-white/5 rounded-lg space-y-3 border border-black/10 dark:border-white/10">
+                    <input type="text" placeholder="Accession Number (e.g. COPY-001) *" required className="glass-input w-full p-2 text-sm rounded" value={copyData.accessionNumber} onChange={e => setCopyData({...copyData, accessionNumber: e.target.value})} />
+                    <input type="text" placeholder="Barcode" className="glass-input w-full p-2 text-sm rounded" value={copyData.barcode} onChange={e => setCopyData({...copyData, barcode: e.target.value})} />
+                    <input type="text" placeholder="Shelf Location" className="glass-input w-full p-2 text-sm rounded" value={copyData.shelfLocation} onChange={e => setCopyData({...copyData, shelfLocation: e.target.value})} />
+                    <select className="glass-input w-full p-2 text-sm rounded" value={copyData.condition} onChange={e => setCopyData({...copyData, condition: e.target.value})}>
+                      <option value="NEW">New</option>
+                      <option value="GOOD">Good</option>
+                      <option value="FAIR">Fair</option>
+                      <option value="POOR">Poor</option>
+                    </select>
+                    <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded text-sm font-semibold">Save</button>
+                  </form>
+                )}
+
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {copies.map(copy => (
+                    <div key={copy._id} className="p-3 bg-white dark:bg-black/20 rounded-lg border border-black/5 dark:border-white/5">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-mono font-bold text-sm text-gray-900 dark:text-white">{copy.accessionNumber}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${copy.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                          {copy.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 flex justify-between">
+                        <span>Shelf: {copy.shelfLocation || 'N/A'}</span>
+                        <span>Cond: {copy.condition}</span>
+                      </div>
+                      {copy.currentBorrower && (
+                        <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/5 text-xs">
+                          <span className="text-gray-400">Issued to: </span>
+                          <span className="text-primary font-medium">{copy.currentBorrower.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {copies.length === 0 && <p className="text-xs text-gray-500 text-center py-4">No copies exist for this book.</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="glass-panel p-6 rounded-2xl h-full flex flex-col items-center justify-center text-center text-gray-500 border-dashed border-2 border-black/10 dark:border-white/10">
+                <BookOpen size={48} className="mb-4 opacity-20" />
+                <p>Select a book from the list<br/>to manage its physical copies.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 };
 

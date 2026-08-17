@@ -49,7 +49,7 @@ const Navbar = () => {
           <Link to="/books" className="nav-link relative font-body-md text-body-md text-gray-800 dark:text-on-surface-variant hover:text-primary transition-colors pb-1">Browse Books</Link>
           
           {user && (
-            <Link to={user.role === 'LIBRARIAN' ? "/librarian/dashboard" : "/dashboard"} className="nav-link relative font-body-md text-body-md text-gray-800 dark:text-on-surface-variant hover:text-primary transition-colors pb-1">
+            <Link to={user.role === 'ADMIN' ? "/admin/dashboard" : user.role === 'LIBRARIAN' ? "/librarian/dashboard" : "/dashboard"} className="nav-link relative font-body-md text-body-md text-gray-800 dark:text-on-surface-variant hover:text-primary transition-colors pb-1">
               Dashboard
             </Link>
           )}
@@ -86,8 +86,7 @@ const Navbar = () => {
             </>
           ) : (
             <div className="flex gap-3 ml-2 border-l border-black/10 dark:border-white/20 pl-4">
-              <Link to="/login" className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/20 text-gray-800 dark:text-on-surface-variant hover:bg-black/5 dark:hover:bg-white/10 transition-colors">Login</Link>
-              <Link to="/register" className="px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-primary-container text-on-primary font-semibold hover:shadow-[0_0_15px_rgba(189,0,255,0.3)] transition-all">Register</Link>
+              <Link to="/login" className="px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-primary-container text-on-primary font-semibold hover:shadow-[0_0_15px_rgba(189,0,255,0.3)] transition-all">Login</Link>
             </div>
           )}
         </div>

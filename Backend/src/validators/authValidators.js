@@ -16,6 +16,6 @@ exports.registerValidator = [
 ];
 
 exports.loginValidator = [
-  body('email').trim().isEmail().withMessage('Please provide a valid email'),
+  body('identifier').trim().notEmpty().withMessage('Please provide an email or roll number'),
   body('password').notEmpty().withMessage('Please provide a password'),
 ];

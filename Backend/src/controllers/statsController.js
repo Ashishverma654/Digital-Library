@@ -8,41 +8,47 @@ const AppError = require('../utils/AppError');
 // @route   GET /api/librarian/stats
 // @access  Private (Librarian)
 exports.getSystemStats = asyncHandler(async (req, res, next) => {
+  const BookCopy = require('../models/BookCopy');
+  
   // Basic counts
-    const totalUsers = await User.countDocuments({ role: 'USER' });
-    const totalBooks = await Book.countDocuments();
-    
-    // Transaction stats
-    const transactions = await BorrowTransaction.find();
-    
-    let pendingRequests = 0;
-    let activeIssued = 0;
-    let overdueCount = 0;
-    let totalFinesCollected = 0;
-    let totalUnpaidFines = 0;
+  const totalUsers = await User.countDocuments({ role: 'STUDENT' });
+  const totalBooks = await Book.countDocuments();
+  const totalBookCopies = await BookCopy.countDocuments();
+  const availableCopies = await BookCopy.countDocuments({ status: 'AVAILABLE' });
+  
+  // Transaction stats
+  const transactions = await BorrowTransaction.find();
+  
+  let pendingRequests = 0;
+  let activeIssued = 0;
+  let overdueCount = 0;
+  let totalFinesCollected = 0;
+  let totalUnpaidFines = 0;
 
-    transactions.forEach(t => {
-      if (t.status === 'REQUESTED') pendingRequests++;
-      if (t.status === 'ISSUED') {
-        if (new Date() > new Date(t.dueDate)) {
-          overdueCount++;
-        } else {
-          activeIssued++;
-        }
+  transactions.forEach(t => {
+    if (t.status === 'REQUESTED') pendingRequests++;
+    if (t.status === 'ISSUED') {
+      if (new Date() > new Date(t.dueDate)) {
+        overdueCount++;
+      } else {
+        activeIssued++;
       }
-      if (t.status === 'OVERDUE') overdueCount++;
-      
-      if (t.fine > 0) {
-        if (t.fineStatus === 'PAID') totalFinesCollected += t.fine;
-        if (t.fineStatus === 'UNPAID') totalUnpaidFines += t.fine;
-      }
-    });
+    }
+    if (t.status === 'OVERDUE') overdueCount++;
+    
+    if (t.fine > 0) {
+      if (t.fineStatus === 'PAID') totalFinesCollected += t.fine;
+      if (t.fineStatus === 'UNPAID') totalUnpaidFines += t.fine;
+    }
+  });
 
   res.status(200).json({
     success: true,
     data: {
       totalUsers,
       totalBooks,
+      totalBookCopies,
+      availableCopies,
       pendingRequests,
       activeIssued,
       overdueCount,

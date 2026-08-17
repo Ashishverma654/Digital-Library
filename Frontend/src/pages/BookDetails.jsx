@@ -12,6 +12,8 @@ const BookDetails = () => {
   
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTransaction, setActiveTransaction] = useState(null);
+  const [onWaitlist, setOnWaitlist] = useState(false);
 
   // Review states
   const [reviews, setReviews] = useState([]);
@@ -22,16 +24,37 @@ const BookDetails = () => {
   useEffect(() => {
     const fetchBookAndReviews = async () => {
       try {
-        const [bookRes, reviewsRes] = await Promise.all([
+        const promises = [
           api.get(`/books/${id}`),
           api.get(`/books/${id}/reviews`)
-        ]);
+        ];
+        
+        if (user && user.role === 'STUDENT') {
+          promises.push(api.get('/transactions/my'));
+        }
+
+        const results = await Promise.all(promises);
+        const bookRes = results[0];
+        const reviewsRes = results[1];
         
         if (bookRes.data.success) {
           setBook(bookRes.data.data);
+          if (user && bookRes.data.data.waitlist?.includes(user.id)) {
+            setOnWaitlist(true);
+          }
         }
         if (reviewsRes.data.success) {
           setReviews(reviewsRes.data.data);
+        }
+        
+        if (user && user.role === 'STUDENT' && results[2]) {
+          const transRes = results[2];
+          if (transRes.data.success) {
+            const active = transRes.data.data.find(t => 
+              t.book._id === id && ['REQUESTED', 'ISSUED', 'OVERDUE'].includes(t.status)
+            );
+            setActiveTransaction(active);
+          }
         }
       } catch (err) {
         toast.error('Failed to fetch book details');
@@ -42,7 +65,7 @@ const BookDetails = () => {
     };
 
     fetchBookAndReviews();
-  }, [id, navigate]);
+  }, [id, navigate, user]);
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -85,9 +108,22 @@ const BookDetails = () => {
       const response = await api.post('/transactions/request', { bookId: id });
       if (response.data.success) {
         toast.success('Borrow request submitted successfully!');
+        window.location.reload();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit request');
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    try {
+      const response = await api.post(`/books/${id}/waitlist`);
+      if (response.data.success) {
+        toast.success('Successfully joined the waitlist!');
+        setOnWaitlist(true);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to join waitlist');
     }
   };
 
@@ -216,7 +252,15 @@ const BookDetails = () => {
 
                   {/* Borrow Button (For Physical and Hybrid) */}
                   {(book.type === 'physical' || book.type === 'hybrid') && (
-                    isAvailable ? (
+                    activeTransaction ? (
+                      <button 
+                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed border border-gray-400 dark:border-gray-600 flex items-center justify-center gap-2"
+                        disabled
+                      >
+                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                        {activeTransaction.status === 'REQUESTED' ? 'Request Pending' : 'Already Borrowed'}
+                      </button>
+                    ) : isAvailable ? (
                       <button 
                         onClick={handleRequestBorrow} 
                         className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
@@ -224,11 +268,20 @@ const BookDetails = () => {
                         <span className="material-symbols-outlined text-[20px]">library_books</span>
                         Request Physical Copy
                       </button>
-                    ) : (
+                    ) : onWaitlist ? (
                       <button 
-                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed"
+                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
                         disabled
                       >
+                        <span className="material-symbols-outlined text-[20px]">hourglass_empty</span>
+                        On Waitlist
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={handleJoinWaitlist}
+                        className="w-full sm:w-auto px-8 py-4 bg-primary/20 text-primary dark:text-primary-fixed border border-primary/30 font-label-sm text-label-sm rounded-lg hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">person_add</span>
                         Join Waitlist
                       </button>
                     )
@@ -245,7 +298,7 @@ const BookDetails = () => {
         <h2 className="font-headline-md text-headline-md text-gray-900 dark:text-primary-fixed mb-6">Reviews & Ratings</h2>
         
         {/* Review Form (Only if logged in and not a librarian, though ideally backend checks if borrowed) */}
-        {user && user.role === 'USER' && (
+        {user && user.role === 'STUDENT' && (
           <form onSubmit={handleSubmitReview} className="mb-10 bg-white/30 dark:bg-black/20 p-6 rounded-lg border border-black/5 dark:border-white/5">
             <h3 className="font-headline-sm text-headline-sm text-gray-900 dark:text-on-surface mb-4">Leave a Review</h3>
             <div className="flex items-center gap-4 mb-4">

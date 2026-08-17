@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
@@ -12,16 +12,18 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!identifier || !password) {
       return toast.error('Please fill in all fields');
     }
     
     setIsSubmitting(true);
     try {
-      const user = await login(email, password);
+      const user = await login(identifier, password);
       toast.success('Logged in successfully!');
       
-      if (user.role === 'LIBRARIAN') {
+      if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'LIBRARIAN') {
         navigate('/librarian/dashboard');
       } else {
         navigate('/dashboard');
@@ -49,29 +51,26 @@ const Login = () => {
         
         {/* Tabs */}
         <div className="flex border-b border-black/10 dark:border-white/10 mb-8 relative z-10">
-          <Link to="/login" className="flex-1 pb-4 text-center font-label-sm text-label-sm text-primary border-b-2 border-primary transition-colors duration-300">
+          <div className="flex-1 pb-4 text-center font-label-sm text-label-sm text-primary border-b-2 border-primary transition-colors duration-300">
             SIGN IN
-          </Link>
-          <Link to="/register" className="flex-1 pb-4 text-center font-label-sm text-label-sm text-gray-600 dark:text-on-surface-variant hover:text-primary transition-colors duration-300">
-            CREATE ACCOUNT
-          </Link>
+          </div>
         </div>
         
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-on-surface-variant/50">mail</span>
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-on-surface-variant/50">person</span>
             <input 
               className="glass-input w-full pl-12 pr-4 py-3 rounded-t-DEFAULT text-gray-900 dark:text-on-background placeholder-transparent peer" 
-              id="email" 
-              placeholder="Email Address" 
+              id="identifier" 
+              placeholder="Email or Roll Number" 
               required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
             />
-            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background rounded-sm" htmlFor="email">
-              Email Address
+            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background rounded-sm" htmlFor="identifier">
+              Email or Roll Number
             </label>
           </div>
           

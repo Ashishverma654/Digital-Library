@@ -11,6 +11,10 @@ const borrowTransactionSchema = new mongoose.Schema({
     ref: 'Book',
     required: true,
   },
+  bookCopy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BookCopy',
+  },
   issuedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -40,10 +44,22 @@ const borrowTransactionSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  lateDays: {
+    type: Number,
+    default: 0,
+  },
+  fineRatePerDay: {
+    type: Number,
+    default: 0,
+  },
   fineStatus: {
     type: String,
     enum: ['NONE', 'UNPAID', 'PAID'],
     default: 'NONE',
+  },
+  renewalsCount: {
+    type: Number,
+    default: 0,
   }
 }, {
   timestamps: true,

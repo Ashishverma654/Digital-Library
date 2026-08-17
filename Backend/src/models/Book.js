@@ -21,9 +21,21 @@ const bookSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  edition: {
+    type: String,
+    trim: true,
+  },
+  publicationYear: {
+    type: Number,
+  },
   category: {
     type: String,
     required: [true, 'Category is required'],
+    trim: true,
+  },
+  language: {
+    type: String,
+    default: 'English',
     trim: true,
   },
   description: {
@@ -38,18 +50,6 @@ const bookSchema = new mongoose.Schema({
     enum: ['physical', 'digital', 'hybrid'],
     required: [true, 'Book type is required'],
   },
-  totalCopies: {
-    type: Number,
-    required: function() { return this.type === 'physical' || this.type === 'hybrid'; },
-    min: [0, 'Total copies cannot be negative'],
-    default: 0
-  },
-  availableCopies: {
-    type: Number,
-    required: function() { return this.type === 'physical' || this.type === 'hybrid'; },
-    min: [0, 'Available copies cannot be negative'],
-    default: 0
-  },
   digitalFileUrl: {
     type: String,
     required: function() { return this.type === 'digital' || this.type === 'hybrid'; }
@@ -61,7 +61,11 @@ const bookSchema = new mongoose.Schema({
   numReviews: {
     type: Number,
     default: 0,
-  }
+  },
+  waitlist: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 }, {
   timestamps: true,
 });

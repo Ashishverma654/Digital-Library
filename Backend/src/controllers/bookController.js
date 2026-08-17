@@ -7,45 +7,51 @@ const AppError = require('../utils/AppError');
 // @access  Public
 exports.getBooks = asyncHandler(async (req, res, next) => {
   const { search, category, type, availability } = req.query;
-    let query = {};
+  let query = {};
 
-    // Search by title, author, or ISBN
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { author: { $regex: search, $options: 'i' } },
-        { isbn: { $regex: search, $options: 'i' } }
-      ];
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { author: { $regex: search, $options: 'i' } },
+      { isbn: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  if (category) {
+    query.category = category;
+  }
+
+  if (type) {
+    query.type = type;
+  }
+
+  let sortOption = { createdAt: -1 }; 
+  if (req.query.sort === 'popular') {
+    sortOption = { title: 1 };
+  }
+
+  let books = await Book.find(query).sort(sortOption).lean();
+
+  const BookCopy = require('../models/BookCopy');
+  
+  // Attach totalCopies and availableCopies dynamically
+  for (let book of books) {
+    if (book.type === 'physical' || book.type === 'hybrid') {
+      const copies = await BookCopy.find({ book: book._id });
+      book.totalCopies = copies.length;
+      book.availableCopies = copies.filter(c => c.status === 'AVAILABLE').length;
+    } else {
+      book.totalCopies = 1;
+      book.availableCopies = 1;
     }
+  }
 
-    // Filter by category
-    if (category) {
-      query.category = category;
-    }
-
-    // Filter by type
-    if (type) {
-      query.type = type;
-    }
-
-    // Filter by availability
-    if (availability === 'available') {
-      query.$or = [
-        { type: 'digital' },
-        { availableCopies: { $gt: 0 } }
-      ];
-    } else if (availability === 'unavailable') {
-      query.type = { $ne: 'digital' };
-      query.availableCopies = { $lte: 0 };
-    }
-
-    let sortOption = { createdAt: -1 }; // Default to newest
-    if (req.query.sort === 'popular') {
-      // For now popular could just sort by title, later by averageRating
-      sortOption = { title: 1 };
-    }
-
-  const books = await Book.find(query).sort(sortOption);
+  // Filter by availability post-query
+  if (availability === 'available') {
+    books = books.filter(b => b.type === 'digital' || b.availableCopies > 0);
+  } else if (availability === 'unavailable') {
+    books = books.filter(b => b.type !== 'digital' && b.availableCopies <= 0);
+  }
 
   res.status(200).json({
     success: true,
@@ -58,10 +64,21 @@ exports.getBooks = asyncHandler(async (req, res, next) => {
 // @route   GET /api/books/:id
 // @access  Public
 exports.getBook = asyncHandler(async (req, res, next) => {
-  const book = await Book.findById(req.params.id);
+  let book = await Book.findById(req.params.id).lean();
 
   if (!book) {
     return next(new AppError('Book not found', 404));
+  }
+
+  const BookCopy = require('../models/BookCopy');
+  
+  if (book.type === 'physical' || book.type === 'hybrid') {
+    const copies = await BookCopy.find({ book: book._id });
+    book.totalCopies = copies.length;
+    book.availableCopies = copies.filter(c => c.status === 'AVAILABLE').length;
+  } else {
+    book.totalCopies = 1;
+    book.availableCopies = 1;
   }
 
   res.status(200).json({
@@ -74,18 +91,10 @@ exports.getBook = asyncHandler(async (req, res, next) => {
 // @route   POST /api/books
 // @access  Private (Librarian only)
 exports.createBook = asyncHandler(async (req, res, next) => {
-  const { title, author, isbn, publisher, category, description, type, totalCopies, coverImage, digitalFileUrl } = req.body;
-
-  // Basic validation for physical/hybrid types
-  if ((type === 'physical' || type === 'hybrid') && (totalCopies === undefined || totalCopies < 0)) {
-    return next(new AppError('Valid total copies required for physical/hybrid books', 400));
-  }
-
-    // Set availableCopies equal to totalCopies initially for physical books
-    let availableCopies = totalCopies || 0;
+  const { title, author, isbn, publisher, category, description, type, coverImage, digitalFileUrl, edition, publicationYear, language } = req.body;
 
   const book = await Book.create({
-    title, author, isbn, publisher, category, description, type, totalCopies, availableCopies, coverImage, digitalFileUrl
+    title, author, isbn, publisher, category, description, type, coverImage, digitalFileUrl, edition, publicationYear, language
   });
 
   res.status(201).json({
@@ -102,18 +111,6 @@ exports.updateBook = asyncHandler(async (req, res, next) => {
 
   if (!book) {
     return next(new AppError('Book not found', 404));
-  }
-
-    const { totalCopies } = req.body;
-    
-  // Validate that new total copies isn't less than currently issued copies
-  if (totalCopies !== undefined && (book.type === 'physical' || book.type === 'hybrid')) {
-    const issuedCopies = book.totalCopies - book.availableCopies;
-    if (totalCopies < issuedCopies) {
-      return next(new AppError(`Cannot reduce total copies below currently issued copies (${issuedCopies})`, 400));
-    }
-    // Update available copies based on new total
-    req.body.availableCopies = totalCopies - issuedCopies;
   }
 
   book = await Book.findByIdAndUpdate(req.params.id, req.body, {
@@ -138,9 +135,14 @@ exports.deleteBook = asyncHandler(async (req, res, next) => {
   }
 
   // Check if copies are currently issued
-  if ((book.type === 'physical' || book.type === 'hybrid') && book.availableCopies < book.totalCopies) {
+  const BookCopy = require('../models/BookCopy');
+  const issuedCopiesCount = await BookCopy.countDocuments({ book: book._id, status: 'ISSUED' });
+  if (issuedCopiesCount > 0) {
     return next(new AppError('This book cannot be deleted because copies are currently issued.', 400));
   }
+
+  // Delete associated copies
+  await BookCopy.deleteMany({ book: book._id });
 
   await book.deleteOne();
 
@@ -233,7 +235,7 @@ exports.getDigitalContent = asyncHandler(async (req, res, next) => {
   }
 
   // If hybrid, ensure the user has currently borrowed it
-  if (book.type === 'hybrid' && req.user.role === 'USER') {
+  if (book.type === 'hybrid' && req.user.role === 'STUDENT') {
     const activeBorrow = await BorrowTransaction.findOne({
       user: req.user.id,
       book: book._id,
@@ -254,5 +256,83 @@ exports.getDigitalContent = asyncHandler(async (req, res, next) => {
     data: {
       digitalFileUrl: book.digitalFileUrl
     }
+  });
+});
+
+// @desc    Join waitlist for a book
+// @route   POST /api/books/:id/waitlist
+// @access  Private (User)
+exports.joinWaitlist = asyncHandler(async (req, res, next) => {
+  const book = await Book.findById(req.params.id);
+
+  if (!book) {
+    return next(new AppError('Book not found', 404));
+  }
+
+  const BookCopy = require('../models/BookCopy');
+  const availableCopiesCount = await BookCopy.countDocuments({ book: book._id, status: 'AVAILABLE' });
+
+  if (book.type === 'digital' || availableCopiesCount > 0) {
+    return next(new AppError('You can only waitlist physical/hybrid books that are currently out of stock.', 400));
+  }
+
+  if (book.waitlist.includes(req.user.id)) {
+    return next(new AppError('You are already on the waitlist for this book.', 400));
+  }
+
+  book.waitlist.push(req.user.id);
+  await book.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Successfully joined the waitlist. You will be notified when a copy becomes available.'
+  });
+});
+
+// @desc    Get recommended books for a user
+// @route   GET /api/books/recommended
+// @access  Private
+exports.getRecommendedBooks = asyncHandler(async (req, res, next) => {
+  const transactions = await BorrowTransaction.find({ user: req.user.id }).populate('book');
+  
+  let recommendedBooks = [];
+
+  if (transactions.length > 0) {
+    // Find favorite category
+    const categoryCounts = {};
+    transactions.forEach(t => {
+      if (t.book && t.book.category) {
+        categoryCounts[t.book.category] = (categoryCounts[t.book.category] || 0) + 1;
+      }
+    });
+
+    let favoriteCategory = null;
+    let maxCount = 0;
+    for (const [cat, count] of Object.entries(categoryCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        favoriteCategory = cat;
+      }
+    }
+
+    if (favoriteCategory) {
+      recommendedBooks = await Book.find({ category: favoriteCategory })
+        .sort({ averageRating: -1 })
+        .limit(4)
+        .lean();
+    }
+  }
+
+  // Fallback to popular books if no recommendations found
+  if (recommendedBooks.length === 0) {
+    recommendedBooks = await Book.find()
+      .sort({ averageRating: -1, numReviews: -1 })
+      .limit(4)
+      .lean();
+  }
+
+  res.status(200).json({
+    success: true,
+    data: recommendedBooks
   });
 });

@@ -21,7 +21,7 @@ const LibrarianDashboard = () => {
       try {
         const [statsRes, transRes] = await Promise.all([
           api.get('/librarian/stats'),
-          api.get('/transactions')
+          api.get('/librarian/transactions')
         ]);
         
         if (statsRes.data.success) {
@@ -46,7 +46,7 @@ const LibrarianDashboard = () => {
 
   const handleAction = async (transactionId, action) => {
     try {
-      const response = await api.put(`/transactions/${transactionId}/${action}`);
+      const response = await api.put(`/librarian/transactions/${transactionId}/${action}`);
       if (response.data.success) {
         toast.success(`Transaction ${action}ed successfully`);
         // Remove from list
@@ -80,6 +80,13 @@ const LibrarianDashboard = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Link 
+            to="/librarian/students"
+            className="py-3 px-6 rounded-lg bg-gradient-to-r from-tertiary to-primary text-white font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(255,180,171,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[20px]">school</span>
+            Manage Students
+          </Link>
+          <Link 
             to="/librarian/books"
             className="py-3 px-6 rounded-lg bg-gradient-to-r from-secondary to-tertiary text-white font-body-md text-body-md font-bold hover:shadow-[0_0_20px_rgba(255,217,224,0.4)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"
           >
@@ -97,62 +104,31 @@ const LibrarianDashboard = () => {
       </header>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {/* Stat Card 1 */}
-        <div className="glass-panel glass-panel-hover rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 cursor-default relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-none">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-primary">
-              <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>book</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        {/* Stat Cards */}
+        {[
+          { label: 'Total Books', value: stats.totalBooks, icon: 'library_books', color: 'text-primary', bg: 'bg-primary/10' },
+          { label: 'Available Copies', value: stats.availableCopies, icon: 'inventory_2', color: 'text-green-600', bg: 'bg-green-100' },
+          { label: 'Issued Books', value: stats.activeIssued, icon: 'menu_book', color: 'text-blue-600', bg: 'bg-blue-100' },
+          { label: 'Overdue Books', value: stats.overdueCount, icon: 'alarm_on', color: 'text-orange-600', bg: 'bg-orange-100' },
+          { label: 'Reservations', value: stats.pendingRequests, icon: 'bookmark', color: 'text-tertiary', bg: 'bg-tertiary/10' },
+          { label: 'Registered Members', value: stats.totalUsers, icon: 'groups', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+          { label: 'Fines Collected', value: `₹${stats.totalFinesCollected}`, icon: 'payments', color: 'text-green-600', bg: 'bg-green-100' },
+          { label: 'Outstanding Fines', value: `₹${stats.totalUnpaidFines}`, icon: 'warning', color: 'text-error', bg: 'bg-error/10' },
+        ].map((s, i) => (
+          <div key={i} className="glass-panel glass-panel-hover rounded-xl p-5 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-none">
+            <div className={`absolute -right-4 -top-4 w-20 h-20 ${s.bg} rounded-full blur-2xl transition-all`}></div>
+            <div className="flex justify-between items-start mb-3 relative z-10">
+              <div className={`p-2 rounded-lg ${s.bg} ${s.color} border border-white/20`}>
+                <span className="material-symbols-outlined text-[24px]">{s.icon}</span>
+              </div>
+            </div>
+            <div className="relative z-10">
+              <p className="font-label-sm text-xs text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">{s.label}</p>
+              <h3 className="font-headline-sm text-2xl font-bold text-gray-900 dark:text-white">{s.value}</h3>
             </div>
           </div>
-          <div className="relative z-10">
-            <p className="font-label-sm text-label-sm text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Total Books</p>
-            <h3 className="font-headline-md text-headline-md text-gray-900 dark:text-on-surface">{stats.totalBooks}</h3>
-          </div>
-        </div>
-        
-        {/* Stat Card 2 */}
-        <div className="glass-panel glass-panel-hover rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 cursor-default relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-none">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-secondary dark:text-secondary-container">
-              <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>group</span>
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="font-label-sm text-label-sm text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Active Users</p>
-            <h3 className="font-headline-md text-headline-md text-gray-900 dark:text-on-surface">{stats.totalUsers}</h3>
-          </div>
-        </div>
-        
-        {/* Stat Card 3 */}
-        <div className="glass-panel glass-panel-hover rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 cursor-default relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-none">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-tertiary/10 rounded-full blur-2xl group-hover:bg-tertiary/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-tertiary dark:text-tertiary-fixed">
-              <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>timer</span>
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="font-label-sm text-label-sm text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Pending Requests</p>
-            <h3 className="font-headline-md text-headline-md text-gray-900 dark:text-on-surface">{stats.pendingRequests}</h3>
-          </div>
-        </div>
-        
-        {/* Stat Card 4 */}
-        <div className="glass-panel glass-panel-hover rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 cursor-default relative overflow-hidden group shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-none">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-error/10 rounded-full blur-2xl group-hover:bg-error/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="p-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-error">
-              <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="font-label-sm text-label-sm text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Unpaid Fines</p>
-            <h3 className="font-headline-md text-headline-md text-gray-900 dark:text-on-surface">₹{stats.totalUnpaidFines}</h3>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Transaction Table Section */}

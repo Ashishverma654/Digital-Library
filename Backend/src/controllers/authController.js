@@ -3,63 +3,25 @@ const generateTokens = require('../utils/generateToken');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const jwt = require('jsonwebtoken');
-
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = asyncHandler(async (req, res, next) => {
-  const { name, email, phone, password, confirmPassword } = req.body;
-
-  if (!name || !email || !phone || !password || !confirmPassword) {
-    return next(new AppError('Please provide all required fields', 400));
-  }
-
-  if (password !== confirmPassword) {
-    return next(new AppError('Passwords do not match', 400));
-  }
-
-  const userExists = await User.findOne({ email });
-
-  if (userExists) {
-    return next(new AppError('Email already exists', 400));
-  }
-
-  const user = await User.create({
-    name,
-    email,
-    phone,
-    password,
-  });
-
-  const { accessToken, refreshToken } = generateTokens(user._id, user.role);
-  user.refreshToken = refreshToken;
-  await user.save({ validateBeforeSave: false });
-
-  res.status(201).json({
-    success: true,
-    message: 'Registration successful',
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      token: accessToken,
-      refreshToken
-    },
-  });
-});
+const logActivity = require('../utils/activityLogger');
 
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
 exports.login = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body; // identifier can be email or studentId
 
-  if (!email || !password) {
-    return next(new AppError('Please provide email and password', 400));
+  if (!identifier || !password) {
+    return next(new AppError('Please provide email/roll number and password', 400));
   }
 
-  const user = await User.findOne({ email }).select('+password');
+  // Find user by email OR studentId
+  const user = await User.findOne({
+    $or: [
+      { email: identifier },
+      { studentId: identifier }
+    ]
+  }).select('+password');
 
   if (!user || !(await user.matchPassword(password))) {
     return next(new AppError('Invalid credentials', 401));
@@ -68,6 +30,8 @@ exports.login = asyncHandler(async (req, res, next) => {
   const { accessToken, refreshToken } = generateTokens(user._id, user.role);
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
+
+  await logActivity(req, user._id, 'LOGIN', 'User logged in successfully');
 
   res.status(200).json({
     success: true,
@@ -125,6 +89,8 @@ exports.logout = asyncHandler(async (req, res, next) => {
   if (user) {
     user.refreshToken = null;
     await user.save({ validateBeforeSave: false });
+    
+    await logActivity(req, user._id, 'LOGOUT', 'User logged out');
   }
 
   res.status(200).json({
@@ -137,7 +103,7 @@ exports.logout = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).populate('course department');
   
   if (!user) {
     return next(new AppError('User not found', 404));

@@ -27,8 +27,35 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['USER', 'LIBRARIAN'],
-    default: 'USER',
+    enum: ['STUDENT', 'LIBRARIAN', 'ADMIN'],
+    default: 'STUDENT',
+  },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'SUSPENDED'],
+    default: 'ACTIVE',
+  },
+  // Student Specific Fields
+  studentId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+  },
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department'
+  },
+  course: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  },
+  yearEnrolled: {
+    type: Number,
+  },
+  section: {
+    type: String,
+    trim: true,
   },
   refreshToken: {
     type: String,

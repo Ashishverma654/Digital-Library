@@ -62,6 +62,12 @@
       }
   }
   
+  @keyframes shimmer {
+      100% {
+          transform: translateX(100%);
+      }
+  }
+  
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }
@@ -236,3 +242,33 @@ h3 { font-size: 1.5rem; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .gap-4 { gap: 1rem; }
+
+/* Custom React Toastify Glassmorphism Overrides */
+:root {
+  --toastify-color-light: rgba(255, 255, 255, 0.4);
+  --toastify-color-dark: rgba(17, 24, 39, 0.4);
+  --toastify-color-info: #4F46E5;
+  --toastify-color-success: #10B981;
+  --toastify-color-warning: #F59E0B;
+  --toastify-color-error: #EF4444;
+  --toastify-toast-background: rgba(255, 255, 255, 0.6);
+}
+
+.dark {
+  --toastify-toast-background: rgba(17, 24, 39, 0.6);
+}
+
+.Toastify__toast {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+}
+
+.dark .Toastify__toast {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(236, 178, 255, 0.05);
+}

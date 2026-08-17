@@ -10,6 +10,12 @@ const Profile = () => {
     phone: '',
     avatar: ''
   });
+  const [extraInfo, setExtraInfo] = useState({
+    email: '',
+    role: '',
+    studentId: '',
+    course: ''
+  });
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -23,6 +29,12 @@ const Profile = () => {
             name: profileData.name || '',
             phone: profileData.phone || '',
             avatar: profileData.avatar || ''
+          });
+          setExtraInfo({
+            email: profileData.email || '',
+            role: profileData.role || '',
+            studentId: profileData.studentId || '',
+            course: profileData.course?.name || profileData.course || ''
           });
         }
       } catch (err) {
@@ -72,7 +84,7 @@ const Profile = () => {
           Your Profile
         </h1>
         <p className="font-body-md text-body-md text-gray-600 dark:text-on-surface-variant mt-2">
-          Manage your personal information and avatar.
+          Manage your personal information.
         </p>
       </header>
 
@@ -88,38 +100,71 @@ const Profile = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-            <input 
-              type="text" 
-              name="name" 
-              required 
-              value={formData.name} 
-              onChange={handleInputChange} 
-              className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" 
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
-            <input 
-              type="text" 
-              name="phone" 
-              required 
-              value={formData.phone} 
-              onChange={handleInputChange} 
-              className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" 
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Avatar Image URL</label>
-            <input 
-              type="url" 
-              name="avatar" 
-              placeholder="https://example.com/avatar.jpg" 
-              value={formData.avatar} 
-              onChange={handleInputChange} 
-              className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+              <input 
+                type="text" 
+                name="name" 
+                required 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+              <input 
+                type="text" 
+                name="phone" 
+                required 
+                value={formData.phone} 
+                onChange={handleInputChange} 
+                className="glass-input w-full p-3 rounded-lg text-gray-900 dark:text-white" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+              <input 
+                type="email" 
+                value={extraInfo.email} 
+                disabled 
+                className="glass-input w-full p-3 rounded-lg text-gray-500 bg-black/5 dark:bg-white/5 cursor-not-allowed" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Role</label>
+              <input 
+                type="text" 
+                value={extraInfo.role} 
+                disabled 
+                className="glass-input w-full p-3 rounded-lg text-gray-500 bg-black/5 dark:bg-white/5 cursor-not-allowed uppercase" 
+              />
+            </div>
+            {extraInfo.role === 'STUDENT' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Roll Number</label>
+                  <input 
+                    type="text" 
+                    value={extraInfo.studentId} 
+                    disabled 
+                    className="glass-input w-full p-3 rounded-lg text-gray-500 bg-black/5 dark:bg-white/5 cursor-not-allowed" 
+                  />
+                </div>
+                {extraInfo.course && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                    <input 
+                      type="text" 
+                      value={typeof extraInfo.course === 'object' ? extraInfo.course.name : extraInfo.course} 
+                      disabled 
+                      className="glass-input w-full p-3 rounded-lg text-gray-500 bg-black/5 dark:bg-white/5 cursor-not-allowed" 
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
           
           <div className="pt-4 flex justify-end">

@@ -8,7 +8,12 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL ? [process.env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:5174'] : '*',
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return callback(null, true);
+    if (/^http:\/\/localhost:\d{4}$/.test(origin)) return callback(null, true);
+    callback(null, false);
+  },
 }));
 app.use(express.json());
 app.use(morgan('dev'));
@@ -24,6 +29,9 @@ app.use('/api/books', require('./routes/bookRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/librarian', require('./routes/librarianRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/notices', require('./routes/noticeRoutes'));
 
 // Error handling middleware
 const globalErrorHandler = require('./middleware/errorMiddleware');

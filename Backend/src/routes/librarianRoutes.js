@@ -8,7 +8,7 @@ const { rejectRequestValidator } = require('../validators/transactionValidators'
 const router = express.Router();
 
 router.use(protect);
-router.use(authorize('LIBRARIAN'));
+router.use(authorize('LIBRARIAN', 'ADMIN'));
 
 router.route('/transactions')
   .get(getAllTransactions);
@@ -27,5 +27,8 @@ router.route('/transactions/:id/fine-paid')
 
 router.route('/stats')
   .get(require('../controllers/statsController').getSystemStats);
+
+router.route('/courses')
+  .get(require('../controllers/courseController').getCourses);
 
 module.exports = router;
