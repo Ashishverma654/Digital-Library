@@ -32,6 +32,7 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Error handling middleware
 const globalErrorHandler = require('./middleware/errorMiddleware');

@@ -7,6 +7,7 @@ import ShaderBackground from './components/ShaderBackground';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ErrorBoundary from './components/ErrorBoundary';
+import Chatbot from './components/Chatbot/Chatbot';
 import './index.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <main className="main-content">
               <AppRoutes />
             </main>
+            <Chatbot />
             {/* Footer will go here */}
           </div>
           <ToastContainer position="bottom-right" theme="dark" />
