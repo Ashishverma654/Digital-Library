@@ -1,19 +1,35 @@
 const { GoogleGenAI, createUserContent, createModelContent, createPartFromFunctionCall, createPartFromFunctionResponse } = require('@google/genai');
 const { tools, toolDeclarations } = require('./libraryTools');
 
-const generateChatResponse = async (userMessage, userId) => {
+const generateChatResponse = async (userMessage, userId, userRole = 'STUDENT') => {
   if (!process.env.GEMINI_API_KEY) {
     return "I am currently offline. Please add the `GEMINI_API_KEY` to the Backend `.env` file to activate me!";
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   
+  const filteredDeclarations = toolDeclarations.filter(decl => {
+    return !decl.allowedRoles || decl.allowedRoles.includes(userRole);
+  }).map(decl => {
+    const { allowedRoles, ...rest } = decl;
+    return rest;
+  });
+
   const libraryTool = {
-    functionDeclarations: toolDeclarations
+    functionDeclarations: filteredDeclarations
   };
 
+  let roleInstruction = '';
+  if (userRole === 'ADMIN') {
+    roleInstruction = 'You are speaking to a SUPER ADMIN. You can provide administrative assistance and system overviews. You have full admin-level access.';
+  } else if (userRole === 'LIBRARIAN') {
+    roleInstruction = 'You are speaking to a LIBRARIAN. You can assist them with managing books, viewing student transactions, and library operations.';
+  } else {
+    roleInstruction = 'You are speaking to a STUDENT. You can help them find books, check book availability, and view their borrowed books and unpaid fines.';
+  }
+
   const systemInstruction = `You are a helpful and polite AI Library Assistant for a college Digital Library.
-You can help students find books, check book availability, and view their borrowed books and unpaid fines.
+${roleInstruction}
 If you need to execute a tool, use it. The system automatically handles their user identity.
 If they ask something completely unrelated to the library, politely decline to answer.
 Keep your responses concise and friendly.`;
@@ -48,12 +64,13 @@ Keep your responses concise and friendly.`;
           // 1. User message
           // 2. Model's function call (wrapped as a Part)
           // 3. Function response (wrapped as a Part with role 'user')
-          const functionCallPart = createPartFromFunctionCall(call.name, call.args || {});
-          const functionResponsePart = createPartFromFunctionResponse(call.id || '', functionName, apiResponse);
+          // Gemini API requires functionResponse.response to be an object, not an array
+          const wrappedResponse = Array.isArray(apiResponse) ? { result: apiResponse } : apiResponse;
+          const functionResponsePart = createPartFromFunctionResponse(call.id || '', functionName, wrappedResponse);
 
           const contents = [
             createUserContent(userMessage),
-            createModelContent(functionCallPart),
+            response.candidates[0].content,
             { role: 'user', parts: [functionResponsePart] }
           ];
 

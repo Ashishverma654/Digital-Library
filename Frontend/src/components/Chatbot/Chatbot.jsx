@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Bot, User as UserIcon } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User as UserIcon, Paperclip, FileSpreadsheet } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,7 +11,9 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,17 +25,61 @@ const Chatbot = () => {
 
   if (!user) return null;
 
+  const isStaff = user.role === 'ADMIN' || user.role === 'LIBRARIAN';
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv'
+    ];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+      alert('Please upload an Excel (.xlsx, .xls) or CSV file.');
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !selectedFile) || isLoading) return;
 
-    const userMessage = { id: Date.now(), text: input, isBot: false };
+    const displayText = selectedFile
+      ? `${input.trim() ? input + '\n' : ''}📎 ${selectedFile.name}`
+      : input;
+
+    const userMessage = { id: Date.now(), text: displayText, isBot: false };
     setMessages(prev => [...prev, userMessage]);
+
+    const messageText = input;
+    const fileToSend = selectedFile;
+
     setInput('');
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setIsLoading(true);
 
     try {
-      const response = await api.post('/chat', { message: userMessage.text });
+      const payload = { message: messageText };
+
+      if (fileToSend) {
+        payload.fileData = await fileToBase64(fileToSend);
+        payload.fileName = fileToSend.name;
+      }
+
+      const response = await api.post('/chat', payload);
       const botMessage = { id: Date.now() + 1, text: response.data.data.reply, isBot: true };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
@@ -97,17 +143,50 @@ const Chatbot = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSend} className="p-4 bg-white dark:bg-surface-container border-t border-black/10 dark:border-white/10 rounded-b-2xl flex gap-2">
+        {/* File preview chip */}
+        {selectedFile && (
+          <div className="px-4 pt-2 bg-white dark:bg-surface-container">
+            <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-xs">
+              <FileSpreadsheet size={14} />
+              <span className="truncate flex-1">{selectedFile.name}</span>
+              <button onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="hover:text-red-500 transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSend} className="p-4 bg-white dark:bg-surface-container border-t border-black/10 dark:border-white/10 rounded-b-2xl flex gap-2 items-center">
+          {isStaff && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="chatbot-file-input"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                title="Attach Excel file"
+              >
+                <Paperclip size={18} />
+              </button>
+            </>
+          )}
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about books, fines, etc..."
+            placeholder={isStaff ? "Message or attach Excel..." : "Ask about books, fines, etc..."}
             className="flex-1 px-4 py-2 bg-black/5 dark:bg-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white text-sm"
           />
           <button 
             type="submit" 
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !selectedFile) || isLoading}
             className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 disabled:opacity-50 hover:bg-primary/90 transition-colors"
           >
             <Send size={18} className="ml-1" />
