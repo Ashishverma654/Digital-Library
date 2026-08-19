@@ -134,7 +134,7 @@ const BookDetails = () => {
   return (
     <main className="w-full max-w-7xl mx-auto px-container-padding-mobile md:px-container-padding-desktop py-32 relative z-10 fade-in-up">
       {/* Back Action */}
-      <Link className="inline-flex items-center space-x-2 text-secondary dark:text-secondary-fixed-dim hover:text-secondary-container transition-colors duration-200 mb-8 font-label-sm text-label-sm group" to="/books">
+      <Link className="inline-flex items-center space-x-2 text-secondary dark:text-secondary-fixed-dim hover:text-primary transition-colors duration-200 mb-8 font-label-sm text-label-sm group" to="/books">
         <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform duration-200">arrow_back</span>
         <span>Back to Catalog</span>
       </Link>
@@ -181,8 +181,8 @@ const BookDetails = () => {
             
             {/* Synopsis */}
             <div className="mb-8">
-              <h3 className="font-label-sm text-label-sm text-gray-500 dark:text-on-surface-variant mb-2 uppercase tracking-wider">Synopsis</h3>
-              <p className="font-body-md text-body-md text-gray-700 dark:text-on-surface-variant max-w-3xl whitespace-pre-wrap">
+              <h3 className="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Synopsis</h3>
+              <p className="font-body-md text-body-md text-gray-800 dark:text-on-surface-variant max-w-3xl whitespace-pre-wrap">
                 {book.description || 'No description available for this book.'}
               </p>
             </div>
@@ -190,21 +190,21 @@ const BookDetails = () => {
             {/* Meta Data */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 p-4 bg-white/30 dark:bg-black/20 rounded-lg">
               <div>
-                <p className="text-xs text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">ISBN</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">ISBN</p>
                 <p className="font-body-md text-gray-900 dark:text-on-surface">{book.isbn}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Publisher</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Publisher</p>
                 <p className="font-body-md text-gray-900 dark:text-on-surface">{book.publisher || 'N/A'}</p>
               </div>
               {book.type !== 'digital' && (
                 <>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Total Copies</p>
+                    <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Total Copies</p>
                     <p className="font-body-md text-gray-900 dark:text-on-surface">{book.totalCopies}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-on-surface-variant uppercase tracking-wider mb-1">Available</p>
+                    <p className="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Available</p>
                     <p className={`font-body-md ${isAvailable ? 'text-secondary dark:text-secondary-fixed' : 'text-error dark:text-error'}`}>
                       {book.availableCopies}
                     </p>
@@ -229,7 +229,7 @@ const BookDetails = () => {
               {/* Render action buttons based on book type and availability */}
               
               {!user ? (
-                <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 text-center">
+                <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1 text-center">
                   Login to Access
                 </Link>
               ) : user.role === 'LIBRARIAN' ? (
@@ -243,7 +243,7 @@ const BookDetails = () => {
                   {(book.type === 'digital' || book.type === 'hybrid') && (
                     <Link 
                       to={`/books/${id}/read`}
-                      className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-secondary to-tertiary text-white font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(255,217,224,0.3)] hover:shadow-[0_0_30px_rgba(255,217,224,0.5)] transition-shadow duration-300 transform hover:-translate-y-1 text-center flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-8 py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1 text-center flex items-center justify-center gap-2"
                     >
                       <span className="material-symbols-outlined text-[20px]">menu_book</span>
                       Read Now
@@ -254,7 +254,7 @@ const BookDetails = () => {
                   {(book.type === 'physical' || book.type === 'hybrid') && (
                     activeTransaction ? (
                       <button 
-                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed border border-gray-400 dark:border-gray-600 flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-8 py-4 bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed border border-outline flex items-center justify-center gap-2"
                         disabled
                       >
                         <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -263,14 +263,14 @@ const BookDetails = () => {
                     ) : isAvailable ? (
                       <button 
                         onClick={handleRequestBorrow} 
-                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white dark:text-on-primary-container font-label-sm text-label-sm rounded-lg shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:shadow-[0_0_30px_rgba(0,224,255,0.4)] transition-shadow duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-8 py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
                       >
                         <span className="material-symbols-outlined text-[20px]">library_books</span>
                         Request Physical Copy
                       </button>
                     ) : onWaitlist ? (
                       <button 
-                        className="w-full sm:w-auto px-8 py-4 bg-gray-300 dark:bg-surface-variant text-gray-500 dark:text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-8 py-4 bg-surface-container text-on-surface-variant font-label-sm text-label-sm rounded-lg cursor-not-allowed border border-outline flex items-center justify-center gap-2"
                         disabled
                       >
                         <span className="material-symbols-outlined text-[20px]">hourglass_empty</span>
@@ -279,7 +279,7 @@ const BookDetails = () => {
                     ) : (
                       <button 
                         onClick={handleJoinWaitlist}
-                        className="w-full sm:w-auto px-8 py-4 bg-primary/20 text-primary dark:text-primary-fixed border border-primary/30 font-label-sm text-label-sm rounded-lg hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-8 py-4 bg-primary text-on-primary font-label-sm text-label-sm rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2"
                       >
                         <span className="material-symbols-outlined text-[20px]">person_add</span>
                         Join Waitlist

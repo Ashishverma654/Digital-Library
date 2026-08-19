@@ -69,7 +69,7 @@ const Login = () => {
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
             />
-            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background rounded-sm" htmlFor="identifier">
+            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background peer-autofill:-top-2.5 peer-autofill:text-xs peer-autofill:text-primary peer-autofill:bg-white peer-autofill:dark:bg-background rounded-sm" htmlFor="identifier">
               Email or Roll Number
             </label>
           </div>
@@ -85,7 +85,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background rounded-sm" htmlFor="password">
+            <label className="absolute left-12 -top-2.5 text-xs text-primary bg-white dark:bg-background px-1 transition-all peer-placeholder-shown:text-body-md peer-placeholder-shown:text-gray-500 peer-placeholder-shown:dark:text-on-surface-variant/50 peer-placeholder-shown:top-3.5 peer-placeholder-shown:bg-transparent peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-white peer-focus:dark:bg-background peer-autofill:-top-2.5 peer-autofill:text-xs peer-autofill:text-primary peer-autofill:bg-white peer-autofill:dark:bg-background rounded-sm" htmlFor="password">
               Password
             </label>
           </div>

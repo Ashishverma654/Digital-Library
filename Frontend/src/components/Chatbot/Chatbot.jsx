@@ -12,6 +12,8 @@ const Chatbot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState("Need help? I'm here!");
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -22,6 +24,22 @@ const Chatbot = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isOpen, isLoading]);
+
+  // Inactivity popup logic
+  useEffect(() => {
+    if (isOpen) {
+      setShowTooltip(false);
+      return;
+    }
+    const interval = setInterval(() => {
+      const msgs = ["Need a book recommendation?", "Ask me about fines!", "How can I help you today?", "Looking for something specific?"];
+      setTooltipMessage(msgs[Math.floor(Math.random() * msgs.length)]);
+      setShowTooltip(true);
+      setTimeout(() => setShowTooltip(false), 5000); // Hide after 5 seconds
+    }, 15000); // Every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   if (!user) return null;
 
@@ -93,34 +111,56 @@ const Chatbot = () => {
 
   return (
     <>
+      {/* Floating Tooltip */}
+      {!isOpen && showTooltip && (
+        <div className="fixed bottom-28 right-8 z-40 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <div className="bg-surface text-on-surface px-4 py-2 rounded-2xl rounded-br-none shadow-lg border border-outline/30 font-body-md text-sm whitespace-nowrap">
+            {tooltipMessage}
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 p-4 bg-primary text-on-primary rounded-full shadow-xl hover:shadow-2xl transition-all z-50 transform hover:scale-110 ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
+        className={`fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-lg hover:shadow-xl flex items-center justify-center z-50 transform transition-all duration-500 hover:scale-110 hover:rotate-12 ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
         aria-label="Open Chatbot"
       >
-        <MessageSquare size={28} />
+        <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
+        <img src="/chatbot-icon.png" alt="Chatbot" className="w-full h-full object-cover rounded-full relative z-10 shadow-lg border-2 border-surface" />
       </button>
 
-      <div className={`fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] max-h-[80vh] bg-white dark:bg-surface-container rounded-2xl shadow-2xl flex flex-col z-50 transition-all transform origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}>
+      <div className={`fixed bottom-6 right-6 w-[calc(100vw-3rem)] sm:w-[400px] h-[550px] max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden transition-all transform origin-bottom-right duration-500 ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 pointer-events-none translate-y-4'}`}>
         
-        <div className="bg-primary text-on-primary p-4 rounded-t-2xl flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Bot size={24} />
-            <h3 className="font-bold text-lg">Library Assistant</h3>
+        {/* Professional Header */}
+        <div className="bg-primary p-5 flex justify-between items-center relative overflow-hidden">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-surface shadow-sm bg-surface">
+              <img src="/chatbot-icon.png" alt="Bot" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-on-primary font-headline-md tracking-wide">Library AI</h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                <span className="text-xs text-on-primary/90 font-medium">Online</span>
+              </div>
+            </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
+          <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-2 rounded-full transition-colors relative z-10 text-on-primary">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-black/5 dark:bg-white/5">
+        {/* Chat Area */}
+        <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-background">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isBot ? 'justify-start' : 'justify-end'}`}>
-              <div className={`flex gap-2 max-w-[85%] ${msg.isBot ? 'flex-row' : 'flex-row-reverse'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.isBot ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'}`}>
-                  {msg.isBot ? <Bot size={16} /> : <UserIcon size={16} />}
-                </div>
-                <div className={`p-3 rounded-2xl text-sm whitespace-pre-wrap ${msg.isBot ? 'bg-white dark:bg-surface-variant text-gray-900 dark:text-white rounded-tl-none' : 'bg-primary text-on-primary rounded-tr-none'}`}>
+              <div className={`flex gap-3 max-w-[85%] ${msg.isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+                {msg.isBot && (
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-outline/30 bg-surface">
+                    <img src="/chatbot-icon.png" alt="Bot" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className={`p-3.5 rounded-2xl text-sm font-body-md shadow-sm whitespace-pre-wrap leading-relaxed ${msg.isBot ? 'bg-surface text-on-background rounded-tl-sm border border-outline/30' : 'bg-secondary text-on-secondary rounded-tr-sm'}`}>
                   {msg.text}
                 </div>
               </div>
@@ -128,14 +168,14 @@ const Chatbot = () => {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex gap-2 max-w-[80%] flex-row">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-primary/20 text-primary">
-                  <Bot size={16} />
+              <div className="flex gap-3 max-w-[80%] flex-row">
+                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-outline/30 bg-surface">
+                  <img src="/chatbot-icon.png" alt="Bot" className="w-full h-full object-cover" />
                 </div>
-                <div className="p-3 rounded-2xl text-sm bg-white dark:bg-surface-variant text-gray-900 dark:text-white rounded-tl-none flex gap-1 items-center">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                <div className="p-4 rounded-2xl rounded-tl-sm bg-surface shadow-sm border border-outline/30 flex gap-1.5 items-center">
+                  <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                  <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                 </div>
               </div>
             </div>
@@ -145,7 +185,7 @@ const Chatbot = () => {
 
         {/* File preview chip */}
         {selectedFile && (
-          <div className="px-4 pt-2 bg-white dark:bg-surface-container">
+          <div className="px-4 pt-2 bg-white">
             <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-xs">
               <FileSpreadsheet size={14} />
               <span className="truncate flex-1">{selectedFile.name}</span>
@@ -156,7 +196,7 @@ const Chatbot = () => {
           </div>
         )}
 
-        <form onSubmit={handleSend} className="p-4 bg-white dark:bg-surface-container border-t border-black/10 dark:border-white/10 rounded-b-2xl flex gap-2 items-center">
+        <form onSubmit={handleSend} className="p-4 bg-surface border-t border-outline/30 flex gap-3 items-center relative">
           {isStaff && (
             <>
               <input
@@ -170,10 +210,10 @@ const Chatbot = () => {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors"
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
                 title="Attach Excel file"
               >
-                <Paperclip size={18} />
+                <Paperclip size={20} />
               </button>
             </>
           )}
@@ -181,13 +221,13 @@ const Chatbot = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isStaff ? "Message or attach Excel..." : "Ask about books, fines, etc..."}
-            className="flex-1 px-4 py-2 bg-black/5 dark:bg-white/10 rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white text-sm"
+            placeholder={isStaff ? "Message or attach Excel..." : "Write a message..."}
+            className="flex-1 px-5 py-3 bg-background border border-outline/30 rounded-full focus:outline-none focus:border-primary text-on-background text-sm font-body-md transition-all placeholder-on-surface-variant/50"
           />
           <button 
             type="submit" 
             disabled={(!input.trim() && !selectedFile) || isLoading}
-            className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            className="w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 transition-all transform hover:-translate-y-0.5"
           >
             <Send size={18} className="ml-1" />
           </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
@@ -7,6 +7,7 @@ const NotificationsPanel = () => {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const panelRef = useRef(null);
 
   const fetchNotifications = async () => {
     try {
@@ -22,10 +23,21 @@ const NotificationsPanel = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 30 seconds for new notifications
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   const markAsRead = async (id) => {
     try {
@@ -61,7 +73,7 @@ const NotificationsPanel = () => {
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} ref={panelRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="btn" 
